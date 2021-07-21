@@ -11,12 +11,11 @@ const TaskModel = DB.createSchedulerCollection();
 let tasks = new Map();
 
 //maps taskId with an object containing its lambda-url and paramaters
-let taskDetails = new Map();
+//let taskDetails = new Map();
 
 //export for use in other files(utils.js/recover.js)
 module.exports.TaskModel = TaskModel;
 module.exports.tasks = tasks;
-module.exports.taskDetails = taskDetails;
 
 //Recover scheduled tasks in case of server crash
 recovery.recoverSchedulerTasks();
@@ -141,19 +140,13 @@ router.post("/schedule", function (req, res) {
       } else {
         let id = result._id.toString();
         console.log("successfully updated taskState to scheduled of task with id "+id);
-        //store task details in taskDetails map
-        taskDetails.set(id,{url:url,params:params,
-                        retriesCount:retriesCount,timeDelayBetweenRetries:timeDelayBetweenRetries});
+        
         // schedule the aws lambda task
         var task = setTimeout(function () {
           utils.executeAWSLambda(id, url, params,retriesCount,timeDelayBetweenRetries);
         }, timeDelay);
         tasks.set(id, task);
-        //print tasks map
-        // console.log("tasks map");
-        // for (const [key, value] of tasks.entries()) {
-        //   console.log(key, value);
-        // }
+        
         //flash message(utility function present in schdulerUtils.js)
         utils.setFlashMessage(
           req,
@@ -170,7 +163,7 @@ router.post("/schedule", function (req, res) {
   retrieve task details from db based on task Instance selected by user 
   Options:
   All -> Retrieve all tasks in 'any state irrespective of user' 
-  scheduled, completed, failed, cancelled -> retrieve task in the selected {state}  created by
+  scheduled, running, completed, failed, cancelled -> retrieve task in the selected {state}  created by
                                               'current logged in user'
 */
 router.post("/retrieve-tasks", function (req, res) {
@@ -240,7 +233,6 @@ router.post("/cancel", function (req, res) {
           if (tasks.has(taskId)) {
             clearTimeout(tasks.get(taskId));
             tasks.delete(taskId);
-            taskDetails.delete(taskId);
             //update taskState to cancelled in DB
             DB.updateTaskState(TaskModel, taskId, "cancelled");
             utils.setFlashMessage(
@@ -320,10 +312,11 @@ router.post("/modify",function(req,res){
               timeDelay = 0;
             }
             //retrieve task details from taskDetails map 
-            let url = taskDetails.get(taskId).url;
-            let params = taskDetails.get(taskId).params;
-            let retriesCount = taskDetails.get(taskId).retriesCount;
-            let timeDelayBetweenRetries = taskDetails.get(taskId).timeDelayBetweenRetries;
+            //TODO can retrieve these fields from result instead of creating a map
+            let url = result.lambdaURL;
+            let params = result.parameters;
+            let retriesCount = result.retriesCount;
+            let timeDelayBetweenRetries = result.timeDelayBetweenRetries;
             console.log('url '+url);
             console.log('params '+JSON.stringify(params));
             console.log('retriesCount '+retriesCount);

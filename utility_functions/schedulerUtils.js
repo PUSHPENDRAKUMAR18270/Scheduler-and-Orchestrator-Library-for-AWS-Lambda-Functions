@@ -1,12 +1,8 @@
 const axios = require("axios");
 const scheduler = require("../routes/scheduler");
 const DB = require("../db.js");
-const { response } = require("express");
 
 /*********************** helper functions ************************/
-
-const TaskModel = scheduler.TaskModel;
-let tasks = scheduler.tasks;
 
 //retrieves parameters passed with the scheduled task in endpoint /schedule
 module.exports.getParams = function (req) {

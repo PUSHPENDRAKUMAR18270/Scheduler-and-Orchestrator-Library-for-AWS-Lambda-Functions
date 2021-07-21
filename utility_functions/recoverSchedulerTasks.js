@@ -5,7 +5,6 @@ const DB = require("../db.js");
 
 module.exports.recoverSchedulerTasks = function () {
     let tasks = scheduler.tasks;
-    let taskDetails = scheduler.taskDetails;
     const TaskModel = scheduler.TaskModel;
     //Retrieve all the tasks which are in scheduled or running tasks irrespective of user
     TaskModel.find({taskState:{$in: ['scheduled', 'running']}}, function (err, results) {
@@ -42,9 +41,6 @@ module.exports.recoverSchedulerTasks = function () {
                 {
                   timeDelay = 0;
                 }
-                //store task details in taskDetails map
-                taskDetails.set(id,{url:url,params:params,
-                                retriesCount:retriesCount,timeDelayBetweenRetries:timeDelayBetweenRetries});
                 // schedule the aws lambda task
                 var task = setTimeout(function () {
                   utils.executeAWSLambda(id, url, params,retriesCount,timeDelayBetweenRetries);
